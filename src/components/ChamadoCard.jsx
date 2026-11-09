@@ -1,7 +1,6 @@
 // src/components/ChamadoCard.jsx
 import { useState } from "react";
 
-// Recebendo as props desestruturadas entre chaves {}
 export default function ChamadoCard({
   id,
   titulo,
@@ -10,10 +9,18 @@ export default function ChamadoCard({
   statusInicial,
   data,
 }) {
-  // Criamos um estado interno 'status' iniciado com a prop 'statusInicial'
+  // Estado 1: controla o status do chamado (Aberto, Em Andamento, Concluído)
   const [status, setStatus] = useState(statusInicial);
 
-  // Função disparada pelo evento onClick para alterar o status
+  // Estado 2 (Requisito 3 do Desafio): controla a visibilidade do cartão
+  const [visivel, setVisivel] = useState(true);
+
+  // RENDERIZAÇÃO CONDICIONAL: Se 'visivel' for false, o componente retorna null e NÃO aparece na tela!
+  if (!visivel) {
+    return null;
+  }
+
+  // Função para alternar o status
   function alternarStatus() {
     if (status === "Aberto") {
       setStatus("Em Andamento");
@@ -24,14 +31,17 @@ export default function ChamadoCard({
     }
   }
 
-  // Define a classe CSS dinâmica baseada no estado atual do status
+  // Função para ocultar o cartão
+  function removerCartao() {
+    setVisivel(false);
+  }
+
   const classeStatus = status.toLowerCase().replace(" ", "-");
 
   return (
     <article className="chamado-card">
       <div className="chamado-header">
         <span className="chamado-id">#{id}</span>
-        {/* Renderização condicional de classe CSS */}
         <span className={`status-badge status-${classeStatus}`}>{status}</span>
       </div>
 
@@ -45,10 +55,17 @@ export default function ChamadoCard({
         <span className="data">{data}</span>
       </div>
 
-      {/* Botão com manipulador de evento onClick */}
-      <button className="btn-status" onClick={alternarStatus}>
-        🔄 Alterar Status
-      </button>
+      {/* Área de Botões de Ação */}
+      <div className="chamado-acoes">
+        <button className="btn-status" onClick={alternarStatus}>
+          🔄 Alterar Status
+        </button>
+
+        {/* Botão de remoção que altera o estado 'visivel' para false */}
+        <button className="btn-remover" onClick={removerCartao}>
+          🗑️ Remover
+        </button>
+      </div>
     </article>
   );
 }
