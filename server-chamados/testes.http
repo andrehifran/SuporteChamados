@@ -1,0 +1,23 @@
+### 1. TESTAR GET (Listar todos os chamados)
+GET http://localhost:3001/api/chamados
+
+### 2. TESTAR POST (Cadastrar novo chamado)
+POST http://localhost:3001/api/chamados
+Content-Type: application/json
+
+{
+  "titulo": "Teclado com defeito no setor 2",
+  "descricao": "Tecla Enter travada e sem resposta.",
+  "prioridade": "Alta"
+}
+
+### 3. TESTAR PUT (Atualizar status do chamado 101)
+PUT http://localhost:3001/api/chamados/101
+Content-Type: application/json
+
+{
+  "status": "Concluído"
+}
+
+### 4. TESTAR DELETE (Excluir o chamado 102)
+DELETE http://localhost:3001/api/chamados/102
