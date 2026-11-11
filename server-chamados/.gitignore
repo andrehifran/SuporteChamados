@@ -1,0 +1,9 @@
+# Arquivo com senhas e chaves secretas (NUNCA SUBIR)
+.env
+
+# Pasta de bibliotecas pesadas instaladas (NUNCA SUBIR)
+node_modules/
+
+# Arquivos temporários do sistema
+.DS_Store
+*.log
