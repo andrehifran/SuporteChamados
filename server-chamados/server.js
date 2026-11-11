@@ -1,75 +1,62 @@
-// server.js - API REST Completa (CRUD) do Sistema de Chamados
-
+// server.js - API REST Integrada ao Supabase
 const express = require("express");
 const cors = require("cors");
+const supabase = require("./supabase"); // Conexão com Supabase
+require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middlewares
 app.use(cors());
-app.use(express.json()); // OBRIGATÓRIO: permite ler dados JSON no req.body
+app.use(express.json());
 
-// Banco de dados em memória (simulado)
-let chamados = [
-  {
-    id: 101,
-    titulo: "Impressora do setor financeiro não responde",
-    descricao: "Erro de comunicação de rede no 2º andar.",
-    prioridade: "Alta",
-    status: "Aberto",
-    data: "2026-11-14",
-  },
-  {
-    id: 102,
-    titulo: "Computador travando ao iniciar o sistema",
-    descricao: "Lentidão recorrente no setor de RH.",
-    prioridade: "Média",
-    status: "Em Andamento",
-    data: "2026-11-14",
-  },
-];
-
-// ============================================================================
-// ROTAS DA API REST (CRUD)
-// ============================================================================
-
-// 1. HEALTH CHECK (GET)
+// 1. HEALTH CHECK
 app.get("/", (req, res) => {
-  res.send("API do Sistema de Chamados de Suporte Técnico rodando!");
+  res.send("API integrada ao Supabase rodando com sucesso!");
 });
 
-// 2. READ ALL (GET) - Listar chamados
-app.get("/api/chamados", (req, res) => {
-  res.status(200).json(chamados);
+// 2. READ ALL (GET) - Buscar todos os chamados do Supabase
+app.get("/api/chamados", async (req, res) => {
+  const { data, error } = await supabase
+    .from("chamados")
+    .select("*")
+    .order("id", { ascending: false });
+
+  if (error) {
+    return res.status(500).json({ erro: error.message });
+  }
+
+  res.status(200).json(data);
 });
 
-// 3. READ ONE (GET) - Consultar chamado por ID
-app.get("/api/chamados/:id", (req, res) => {
-  const idBusca = parseInt(req.params.id);
-  const chamado = chamados.find((c) => c.id === idBusca);
+// 3. READ ONE (GET) - Buscar chamado por ID
+app.get("/api/chamados/:id", async (req, res) => {
+  const { id } = req.params;
 
-  if (!chamado) {
+  const { data, error } = await supabase
+    .from("chamados")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (error || !data) {
     return res.status(404).json({ erro: "Chamado não encontrado." });
   }
 
-  res.status(200).json(chamado);
+  res.status(200).json(data);
 });
 
-// 4. CREATE (POST) - Cadastrar novo chamado
-app.post("/api/chamados", (req, res) => {
+// 4. CREATE (POST) - Inserir novo chamado no Supabase
+app.post("/api/chamados", async (req, res) => {
   const { titulo, descricao, prioridade } = req.body;
 
-  // Validação simples de campos obrigatórios
   if (!titulo || !descricao) {
-    return res.status(400).json({
-      erro: "Título e descrição são campos obrigatórios.",
-    });
+    return res
+      .status(400)
+      .json({ erro: "Título e descrição são obrigatórios." });
   }
 
-  // Cria o novo chamado
   const novoChamado = {
-    id: Date.now(), // Gera ID único temporário
     titulo,
     descricao,
     prioridade: prioridade || "Baixa",
@@ -77,61 +64,63 @@ app.post("/api/chamados", (req, res) => {
     data: new Date().toISOString().split("T")[0],
   };
 
-  chamados.push(novoChamado);
+  const { data, error } = await supabase
+    .from("chamados")
+    .insert([novoChamado])
+    .select();
 
-  // Retorna status 201 Created com o objeto criado
-  res.status(201).json(novoChamado);
-});
-
-// 5. UPDATE (PUT) - Atualizar um chamado existente
-app.put("/api/chamados/:id", (req, res) => {
-  const idBusca = parseInt(req.params.id);
-  const index = chamados.findIndex((c) => c.id === idBusca);
-
-  if (index === -1) {
-    return res
-      .status(404)
-      .json({ erro: "Chamado não encontrado para atualização." });
+  if (error) {
+    return res.status(500).json({ erro: error.message });
   }
 
-  // Atualiza os dados mantendo o ID original
-  const { titulo, descricao, prioridade, status } = req.body;
+  res.status(201).json(data[0]);
+});
 
-  chamados[index] = {
-    ...chamados[index],
-    titulo: titulo || chamados[index].titulo,
-    descricao: descricao || chamados[index].descricao,
-    prioridade: prioridade || chamados[index].prioridade,
-    status: status || chamados[index].status,
-  };
+// 5. UPDATE (PUT) - Atualizar chamado no Supabase
+app.put("/api/chamados/:id", async (req, res) => {
+  const { id } = req.params;
+  const { status, prioridade, titulo, descricao } = req.body;
+
+  const dadosAtualizados = {};
+  if (status) dadosAtualizados.status = status;
+  if (prioridade) dadosAtualizados.prioridade = prioridade;
+  if (titulo) dadosAtualizados.titulo = titulo;
+  if (descricao) dadosAtualizados.descricao = descricao;
+
+  const { data, error } = await supabase
+    .from("chamados")
+    .update(dadosAtualizados)
+    .eq("id", id)
+    .select();
+
+  if (error) {
+    return res.status(500).json({ erro: error.message });
+  }
 
   res.status(200).json({
-    mensagem: "Chamado atualizado com sucesso!",
-    chamado: chamados[index],
+    mensagem: "Chamado atualizado no banco de dados!",
+    chamado: data[0],
   });
 });
 
-// 6. DELETE (DELETE) - Excluir um chamado por ID
-app.delete("/api/chamados/:id", (req, res) => {
-  const idBusca = parseInt(req.params.id);
-  const index = chamados.findIndex((c) => c.id === idBusca);
+// 6. DELETE (DELETE) - Excluir chamado no Supabase
+app.delete("/api/chamados/:id", async (req, res) => {
+  const { id } = req.params;
 
-  if (index === -1) {
-    return res
-      .status(404)
-      .json({ erro: "Chamado não encontrado para exclusão." });
+  const { error } = await supabase.from("chamados").delete().eq("id", id);
+
+  if (error) {
+    return res.status(500).json({ erro: error.message });
   }
 
-  // Remove o chamado do array
-  const chamadoRemovido = chamados.splice(index, 1);
-
-  res.status(200).json({
-    mensagem: "Chamado excluído com sucesso!",
-    chamado: chamadoRemovido[0],
-  });
+  res
+    .status(200)
+    .json({ mensagem: "Chamado excluído do banco de dados com sucesso!" });
 });
 
-// Inicialização do Servidor
+// Inicialização do servidor
 app.listen(PORT, () => {
-  console.log(`🚀 Servidor rodando na porta http://localhost:${PORT}`);
+  console.log(
+    `🚀 Servidor rodando integrado ao Supabase em: http://localhost:${PORT}`,
+  );
 });
