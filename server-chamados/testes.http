@@ -21,3 +21,42 @@ Content-Type: application/json
 
 ### 4. TESTAR DELETE (Excluir o chamado 102)
 DELETE http://localhost:3001/api/chamados/1794420865107
+
+### 1. CADASTRAR NOVO USUÁRIO (Senha é salva como Hash no Supabase!)
+POST http://localhost:3001/api/auth/cadastrar
+Content-Type: application/json
+
+{
+  "nome": "Carlos Roberto",
+  "email": "carlos@email.com",
+  "senha": "senhaSegura123"
+}
+
+### 2. FAZER LOGIN (Retorna o TOKEN JWT)
+POST http://localhost:3001/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "carlos@email.com",
+  "senha": "senhaSegura123"
+}
+
+### 3. TENTAR CRIAR CHAMADO SEM TOKEN (Deve retornar Erro 401 - Negado)
+POST http://localhost:3001/api/chamados
+Content-Type: application/json
+
+{
+  "titulo": "Tentativa de invasão",
+  "descricao": "Sem token de autorização"
+}
+
+### 4. CRIAR CHAMADO COM TOKEN VÁLIDO (Cole o token retornado do login abaixo)
+POST http://localhost:3001/api/chamados
+Content-Type: application/json
+Authorization: Bearer COLE_O_TOKEN_AQUI_APOS_FAZER_LOGIN
+
+{
+  "titulo": "Monitor sem imagem no setor 3",
+  "descricao": "Cabo HDMI solto na estação de trabalho.",
+  "prioridade": "Média"
+}
