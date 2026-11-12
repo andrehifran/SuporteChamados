@@ -175,3 +175,29 @@ app.listen(PORT, () => {
     `🚀 Servidor com Autenticação JWT rodando em: http://localhost:${PORT}`,
   );
 });
+
+//CRIAR UMA ROTA PARA O MARIADB
+const mysql = require("mysql2/promise");
+
+// Rota de teste exclusiva do MariaDB local
+app.get("/api/mariadb/chamados", async (req, res) => {
+  try {
+    // Conecta ao MariaDB local no DBeaver
+    const conexao = await mysql.createConnection({
+      host: "localhost",
+      user: "root", // Seu usuário do MariaDB
+      password: "idep@123", // Sua senha do MariaDB
+      database: "bd_chamados",
+    });
+
+    const [linhas] = await conexao.query("SELECT * FROM chamados");
+    await conexao.end(); // Fecha a conexão
+
+    res.status(200).json({
+      origem: "Dados vindos do MariaDB Local!",
+      dados: linhas,
+    });
+  } catch (erro) {
+    res.status(500).json({ erro: erro.message });
+  }
+});

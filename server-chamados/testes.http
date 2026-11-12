@@ -60,3 +60,17 @@ Authorization: Bearer COLE_O_TOKEN_AQUI_APOS_FAZER_LOGIN
   "descricao": "Cabo HDMI solto na estação de trabalho.",
   "prioridade": "Média"
 }
+
+
+//TESTES PARA O MARIADB
+
+### CADASTRAR NOVO CHAMADO NO MARIADB (POST)
+POST http://localhost:3001/api/mariadb/chamados
+Content-Type: application/json
+
+{
+  "titulo": "Computador não liga no setor de Vendas",
+  "descricao": "Fonte de alimentação com cheiro de queimado.",
+  "prioridade": "Alta",
+  "usuario_id": 1
+}

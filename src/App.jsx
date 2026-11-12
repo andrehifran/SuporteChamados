@@ -1,4 +1,4 @@
-// src/App.jsx - React Integrado à API Express/Supabase
+// src/App.jsx - Escolhendo o Banco de Dados dinamicamente
 import { useState, useEffect } from "react";
 import Header from "./components/Header";
 import ResumoMetricas from "./components/ResumoMetricas";
@@ -7,33 +7,46 @@ import FiltroChamados from "./components/FiltroChamados";
 import ChamadoCard from "./components/ChamadoCard";
 import "./App.css";
 
-const API_URL = "http://localhost:3001/api/chamados";
-
 export default function App() {
   const [chamados, setChamados] = useState([]);
   const [busca, setBusca] = useState("");
   const [carregando, setCarregando] = useState(true);
 
-  // 1. CARREGAR CHAMADOS DA API (GET)
+  // 1. ESTADO PARA SELECIONAR QUAL BANCO USAR ('supabase' ou 'mariadb')
+  const [bancoDestino, setBancoDestino] = useState("supabase");
+
+  // Define a URL da API baseada no banco escolhido
+  const API_URL =
+    bancoDestino === "supabase"
+      ? "http://localhost:3001/api/chamados"
+      : "http://localhost:3001/api/mariadb/chamados";
+
+  // 2. BUSCAR CHAMADOS DO BANCO SELECIONADO
   async function carregarChamados() {
     try {
       setCarregando(true);
       const res = await fetch(API_URL);
       if (!res.ok) throw new Error("Erro ao buscar chamados");
-      const dados = await res.json();
-      setChamados(dados);
+
+      const respostaJson = await res.json();
+
+      // O MariaDB retorna os dados dentro de um objeto { dados: [...] }
+      const listaDados = respostaJson.dados ? respostaJson.dados : respostaJson;
+      setChamados(listaDados);
     } catch (erro) {
       console.error(erro);
+      setChamados([]);
     } finally {
       setCarregando(false);
     }
   }
 
+  // Recarrega a lista sempre que o usuário mudar a opção do banco de dados no select
   useEffect(() => {
     carregarChamados();
-  }, []);
+  }, [bancoDestino]);
 
-  // 2. CADASTRAR CHAMADO NA API (POST)
+  // 3. CADASTRAR NO BANCO SELECIONADO
   async function adicionarChamado(novoChamado) {
     try {
       const res = await fetch(API_URL, {
@@ -44,38 +57,14 @@ export default function App() {
 
       if (!res.ok) throw new Error("Erro ao salvar chamado");
 
-      // Recarrega a lista do banco de dados atualizada
-      carregarChamados();
+      alert(`Chamado cadastrado com sucesso no ${bancoDestino.toUpperCase()}!`);
+      carregarChamados(); // Atualiza a lista na tela
     } catch (erro) {
-      alert("Falha ao cadastrar chamado no banco de dados.");
+      alert(`Falha ao cadastrar chamado no ${bancoDestino.toUpperCase()}.`);
     }
   }
 
-  // 3. ALTERAR STATUS NA API (PUT)
-  async function alternarStatus(id, statusAtual) {
-    const proximoStatus =
-      statusAtual === "Aberto"
-        ? "Em Andamento"
-        : statusAtual === "Em Andamento"
-          ? "Concluído"
-          : "Aberto";
-
-    try {
-      const res = await fetch(`${API_URL}/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: proximoStatus }),
-      });
-
-      if (!res.ok) throw new Error("Erro ao atualizar status");
-
-      carregarChamados();
-    } catch (erro) {
-      alert("Falha ao atualizar status no banco de dados.");
-    }
-  }
-
-  // 4. EXCLUIR CHAMADO NA API (DELETE)
+  // 4. EXCLUIR CHAMADO
   async function removerChamado(id) {
     try {
       const res = await fetch(`${API_URL}/${id}`, {
@@ -86,7 +75,7 @@ export default function App() {
 
       carregarChamados();
     } catch (erro) {
-      alert("Falha ao excluir chamado do banco de dados.");
+      alert("Falha ao excluir chamado.");
     }
   }
 
@@ -101,20 +90,52 @@ export default function App() {
       <main className="main-content">
         <ResumoMetricas />
 
+        {/* SELETOR DE BANCO DE DADOS NO FRONT-END */}
+        <div
+          className="seletor-banco-container"
+          style={{
+            marginBottom: "15px",
+            background: "#fff",
+            padding: "12px",
+            borderRadius: "8px",
+          }}
+        >
+          <label style={{ fontWeight: "bold", marginRight: "10px" }}>
+            🗄️ Selecione o Banco de Dados Ativo:
+          </label>
+          <select
+            value={bancoDestino}
+            onChange={(e) => setBancoDestino(e.target.value)}
+            style={{
+              padding: "6px 12px",
+              borderRadius: "4px",
+              cursor: "pointer",
+            }}
+          >
+            <option value="supabase">Supabase (Nuvem / PostgreSQL)</option>
+            <option value="mariadb">MariaDB (Local / DBeaver)</option>
+          </select>
+        </div>
+
         <FormularioChamado onAdicionarChamado={adicionarChamado} />
 
         <div className="top-bar">
-          <h2>Painel de Chamados ({chamadosFiltrados.length})</h2>
+          <h2>
+            Chamados em [{bancoDestino.toUpperCase()}] (
+            {chamadosFiltrados.length})
+          </h2>
           <FiltroChamados busca={busca} setBusca={setBusca} />
         </div>
 
         {carregando ? (
-          <p className="sem-chamados">Carregando chamados do Supabase...</p>
+          <p className="sem-chamados">
+            Buscando dados no {bancoDestino.toUpperCase()}...
+          </p>
         ) : (
           <section className="lista-chamados">
             {chamadosFiltrados.length === 0 ? (
               <p className="sem-chamados">
-                Nenhum chamado encontrado no banco de dados.
+                Nenhum chamado encontrado neste banco de dados.
               </p>
             ) : (
               chamadosFiltrados.map((chamado) => (
@@ -126,9 +147,6 @@ export default function App() {
                   prioridade={chamado.prioridade}
                   statusInicial={chamado.status}
                   data={chamado.data}
-                  onAlternarStatus={() =>
-                    alternarStatus(chamado.id, chamado.status)
-                  }
                   onRemover={() => removerChamado(chamado.id)}
                 />
               ))
