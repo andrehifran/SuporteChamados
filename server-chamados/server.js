@@ -1,6 +1,7 @@
 // server.js - API REST com Autenticação e Proteção de Rotas
 const express = require("express");
 const cors = require("cors");
+const mysql = require("mysql2/promise");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const supabase = require("./supabase");
@@ -176,26 +177,85 @@ app.listen(PORT, () => {
   );
 });
 
-//CRIAR UMA ROTA PARA O MARIADB
-const mysql = require("mysql2/promise");
-
-// Rota de teste exclusiva do MariaDB local
+// 1. ROTA GET (Para listar os chamados do MariaDB)
 app.get("/api/mariadb/chamados", async (req, res) => {
   try {
-    // Conecta ao MariaDB local no DBeaver
     const conexao = await mysql.createConnection({
       host: "localhost",
-      user: "root", // Seu usuário do MariaDB
-      password: "idep@123", // Sua senha do MariaDB
+      user: "root",
+      password: "idep@123",
       database: "bd_chamados",
     });
 
-    const [linhas] = await conexao.query("SELECT * FROM chamados");
-    await conexao.end(); // Fecha a conexão
+    const [linhas] = await conexao.query(
+      "SELECT * FROM chamados ORDER BY id DESC",
+    );
+    await conexao.end();
 
-    res.status(200).json({
-      origem: "Dados vindos do MariaDB Local!",
-      dados: linhas,
+    res.status(200).json(linhas);
+  } catch (erro) {
+    res.status(500).json({ erro: erro.message });
+  }
+});
+
+// 1. ROTA GET (Para listar os chamados do MariaDB)
+app.get("/api/mariadb/chamados", async (req, res) => {
+  try {
+    const conexao = await mysql.createConnection({
+      host: "localhost",
+      user: "root",
+      password: "idep@123",
+      database: "bd_chamados",
+    });
+
+    const [linhas] = await conexao.query(
+      "SELECT * FROM chamados ORDER BY id DESC",
+    );
+    await conexao.end();
+
+    res.status(200).json(linhas);
+  } catch (erro) {
+    res.status(500).json({ erro: erro.message });
+  }
+});
+
+// 2. ROTA POST (Para CADASTRAR novo chamado no MariaDB)
+app.post("/api/mariadb/chamados", async (req, res) => {
+  try {
+    const { titulo, descricao, prioridade, usuario_id } = req.body;
+
+    if (!titulo || !descricao) {
+      return res
+        .status(400)
+        .json({ erro: "Título e descrição são obrigatórios." });
+    }
+
+    const conexao = await mysql.createConnection({
+      host: "localhost",
+      user: "root",
+      password: "idep@123",
+      database: "bd_chamados",
+    });
+
+    const dataAtual = new Date().toISOString().split("T")[0];
+
+    const [resultado] = await conexao.query(
+      "INSERT INTO chamados (titulo, descricao, prioridade, status, data, usuario_id) VALUES (?, ?, ?, ?, ?, ?)",
+      [
+        titulo,
+        descricao,
+        prioridade || "Baixa",
+        "Aberto",
+        dataAtual,
+        usuario_id || 1,
+      ],
+    );
+
+    await conexao.end();
+
+    res.status(201).json({
+      mensagem: "Chamado cadastrado no MariaDB com sucesso!",
+      id_gerado: resultado.insertId,
     });
   } catch (erro) {
     res.status(500).json({ erro: erro.message });
