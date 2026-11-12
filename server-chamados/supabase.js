@@ -3,8 +3,8 @@ const { createClient } = require("@supabase/supabase-js");
 require("dotenv").config();
 
 // Lê as chaves do arquivo .env de forma segura
-const supabaseUrl = "https://nukaijgbwuqwoszusuwo.supabase.co";
-const supabaseKey = "sb_publishable_qP_90R5qc6_VZQvpeXjYDw_lO-cBvo7";
+const supabaseUrl = "aqui sua url";
+const supabaseKey = "aqui sua apikey";
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
