@@ -24,8 +24,8 @@ export default function App() {
 
   const API_URL =
     bancoDestino === "supabase"
-      ? "http://localhost:3001/api/chamados"
-      : "http://localhost:3001/api/mariadb/chamados";
+      ? "https://suportechamados.onrender.com/api/chamados"
+      : "https://suportechamados.onrender.com/api/mariadb/chamados";
 
   async function carregarChamados() {
     try {
