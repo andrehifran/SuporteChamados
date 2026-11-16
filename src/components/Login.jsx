@@ -16,8 +16,8 @@ export default function Login({ onLoginSucesso }) {
 
     // Escolhe a rota de Login ou de Cadastro na API
     const url = modoCadastro
-      ? "http://localhost:3001/api/auth/cadastrar"
-      : "http://localhost:3001/api/auth/login";
+      ? "https://suportechamados.onrender.com/api/auth/cadastrar"
+      : "https://suportechamados.onrender.com/api/auth/login";
 
     const corpo = modoCadastro ? { nome, email, senha } : { email, senha };
 
